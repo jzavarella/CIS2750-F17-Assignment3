@@ -24,14 +24,17 @@ class App(tk.Tk):
 
     def initFileView(self):
         fileViewFrame = tk.Frame(self, bg="RED")
-        paddedFrame = tk.Frame(fileViewFrame)
-        self.calendars = ttk.Treeview(paddedFrame, columns=("event", "props", "alarms", "sum") ,height=25, selectmode="browse")
-        self.calendars.heading("#0", text="Cal")
+        paddedFrame = tk.Frame(fileViewFrame) # Set a padding frame so we can pad the scroll bar and the treeview at the same time
+        self.calendars = ttk.Treeview(paddedFrame, columns=("event", "props", "alarms", "sum"), height=25, selectmode="none") # Create the treeview select mode is none so we ca have out own implementation
+        ## Set the size of each column
         self.calendars.column("#0", width=50)
         self.calendars.column("event", width=100)
         self.calendars.column("props", width=100)
         self.calendars.column("alarms", width=100)
-        self.calendars.column("sum", stretch=True)
+        self.calendars.column("sum", stretch=True) # Allow the summary to fill all remaining space
+
+        ## Set the headers
+        self.calendars.heading("#0", text="Cal")
         self.calendars.heading("event", text="Event No.")
         self.calendars.heading("props", text="Props")
         self.calendars.heading("alarms", text="Alarms")
@@ -41,9 +44,9 @@ class App(tk.Tk):
         scrollbar.pack(side="right", fill="y") # Pin the scrollbar to the right side and take up all room
         self.calendars.config(yscrollcommand=scrollbar.set) # Tell the text that it loves the scrollbar even though she is married ot the padding frame
         paddedFrame.pack(fill="both", padx=10, pady=10)
-        fileViewFrame.pack(fill="x")
-        self.calendars.pack(fill="x")
-        self.calendars.bind("<1>", self.rowClickHandler) # Handle clicking of a row
+        fileViewFrame.pack(fill="both")
+        self.calendars.pack(fill="both")
+        self.calendars.bind("<ButtonPress-1>", self.rowClickHandler) # Handle clicking of a row
 
     def initLogPanel(self):
         logFrame = tk.Frame(self, bg="BLUE") # Create a frame to house the console
@@ -98,13 +101,11 @@ class App(tk.Tk):
         print(log) # Log the log in the console as well
 
     def rowClickHandler(self, event):
-        self.log("down")
-        row = self.calendars.selection()
-        clicked = self.calendars.identify_row(event.y)
-        if clicked in row:
-            self.log("If")
-            self.calendars.selection_remove(row)
-            return
+        row = self.calendars.selection() # Get all selected nodes
+        clicked = self.calendars.identify_row(event.y) # Get the node our mouse is on
+        if clicked not in row: # If the node our mouse is on is not selected
+            self.calendars.selection_add(clicked) # Select it
+        self.calendars.selection_remove(row) # Deselect all other nodes
 
     def openHandler(self):
         self.log("open")
