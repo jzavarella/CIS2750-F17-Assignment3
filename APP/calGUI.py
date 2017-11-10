@@ -1,10 +1,13 @@
 # !/usr/bin/python3
 
+# TODO: Clean this up
 import tkinter as tk
 from tkinter import ttk
 from tkinter import *
 import sys
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
+
+from cal import driver
 
 
 class App(tk.Tk):
@@ -18,35 +21,33 @@ class App(tk.Tk):
         self.initFileView() # Make the file view
         self.initLogPanel() # Make the console
 
-        for _ in range(80):
-            self.insertCalendar(_, 1,2,3,"summar") # Populate with test data TODO: Remove this
+        self.calDriver = driver.CalendarDriver("bin/libcparse.so") # Initialize the CalendarDriver
 
 
     def initFileView(self):
         fileViewFrame = tk.Frame(self, bg="RED")
         paddedFrame = tk.Frame(fileViewFrame) # Set a padding frame so we can pad the scroll bar and the treeview at the same time
-        self.calendars = ttk.Treeview(paddedFrame, columns=("event", "props", "alarms", "sum"), height=25, selectmode="none") # Create the treeview select mode is none so we ca have out own implementation
+        self.components = ttk.Treeview(paddedFrame, columns=("event", "props", "alarms", "sum"), height=25, selectmode="none") # Create the treeview select mode is none so we ca have out own implementation
+        self.components['show'] = 'headings'
         ## Set the size of each column
-        self.calendars.column("#0", width=50)
-        self.calendars.column("event", width=100)
-        self.calendars.column("props", width=100)
-        self.calendars.column("alarms", width=100)
-        self.calendars.column("sum", stretch=True) # Allow the summary to fill all remaining space
+        self.components.column("event", width=50, anchor=CENTER)
+        self.components.column("props", width=50, anchor=CENTER)
+        self.components.column("alarms", width=50, anchor=CENTER)
+        self.components.column("sum", stretch=True) # Allow the summary to fill all remaining space
 
         ## Set the headers
-        self.calendars.heading("#0", text="Cal")
-        self.calendars.heading("event", text="Event No.")
-        self.calendars.heading("props", text="Props")
-        self.calendars.heading("alarms", text="Alarms")
-        self.calendars.heading("sum", text="Summary")
+        self.components.heading("event", text="Event No.")
+        self.components.heading("props", text="Props")
+        self.components.heading("alarms", text="Alarms")
+        self.components.heading("sum", text="Summary")
 
-        scrollbar = tk.Scrollbar(paddedFrame, command=self.calendars.yview) # Make a scrollbar and marry it to the frame
+        scrollbar = tk.Scrollbar(paddedFrame, command=self.components.yview) # Make a scrollbar and marry it to the frame
         scrollbar.pack(side="right", fill="y") # Pin the scrollbar to the right side and take up all room
-        self.calendars.config(yscrollcommand=scrollbar.set) # Tell the text that it loves the scrollbar even though she is married ot the padding frame
+        self.components.config(yscrollcommand=scrollbar.set) # Tell the text that it loves the scrollbar even though she is married ot the padding frame
         paddedFrame.pack(fill="both", padx=10, pady=10)
         fileViewFrame.pack(fill="both")
-        self.calendars.pack(fill="both")
-        self.calendars.bind("<ButtonPress-1>", self.rowClickHandler) # Handle clicking of a row
+        self.components.pack(fill="both")
+        self.components.bind("<ButtonPress-1>", self.rowClickHandler) # Handle clicking of a row
 
     def initLogPanel(self):
         logFrame = tk.Frame(self, bg="BLUE") # Create a frame to house the console
@@ -89,8 +90,9 @@ class App(tk.Tk):
         self.bind_all("<Control-e>", lambda event: self.after(150, self.createEventHandler))
         self.bind_all("<Control-i>", lambda event: self.after(150, self.aboutHandler))
 
-    def insertCalendar(self, name, events, props, alarms, summary):
-        self.calendars.insert("" , "end", text=name, values=(events, props, alarms, summary))
+    def insertComponent(self, component):
+        n = len(self.components.get_children("")) + 1 # Get number of elements in list and add 1
+        self.components.insert("" , "end", values=(n, component[0], component[1], component[2])) # Put the component in the list
 
     def log(self, log):
         self.console.config(state=NORMAL) # Allow editting
@@ -101,14 +103,27 @@ class App(tk.Tk):
         print(log) # Log the log in the console as well
 
     def rowClickHandler(self, event):
-        row = self.calendars.selection() # Get all selected nodes
-        clicked = self.calendars.identify_row(event.y) # Get the node our mouse is on
+        row = self.components.selection() # Get all selected nodes
+        clicked = self.components.identify_row(event.y) # Get the node our mouse is on
         if clicked not in row: # If the node our mouse is on is not selected
-            self.calendars.selection_add(clicked) # Select it
-        self.calendars.selection_remove(row) # Deselect all other nodes
+            self.components.selection_add(clicked) # Select it
+        self.components.selection_remove(row) # Deselect all other nodes
 
     def openHandler(self):
-        self.log("open")
+        f = filedialog.askopenfilename(initialdir = ".",title = "Select file",filetypes = (("all files","*.*"), ("iCalendar files","*.ics")))
+        fPretty = f[f.rfind("/") + 1:]
+        self.log("Opening : " + fPretty) # Tell the user we are trying to open the file
+        valid = self.calDriver.validateCalendar(f) # Try to open the file
+        if valid != "OK":
+            self.log("Error opening calendar file " + fPretty + " : " + valid) # Output the error
+            return
+        self.components.delete(*self.components.get_children())
+        self.log(valid) # Tell the user everything went OK
+        self.title(fPretty)
+
+        components = self.calDriver.getCalendarComponents(f)
+        for component in components:
+            self.insertComponent(component)
 
     def saveHandler(self):
         self.log("save")
