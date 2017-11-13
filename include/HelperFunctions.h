@@ -47,7 +47,8 @@ ICalErrorCode readLinesIntoList(char* fileName, List* list, int bufferSize);
 void deleteProperty(List* propList, char* line);
 ICalErrorCode extractBetweenTags(List props, List* extracted, ICalErrorCode onFailError, char* tag);
 char* printDatePretty(DateTime dt); // Prints a pretty version of a date
-ICalErrorCode createTime(Event* event, char* timeString); // Creates a DateTime and allocates it to the given event if the timeString can be parsed
+ICalErrorCode createDateTime(Event* event, char* timeString); // Creates a DateTime and allocates it to the given event if the timeString can be parsed
+ICalErrorCode createStartTime(Event* event, char* timeString);
 void removeIntersectionOfLists(List* l1, List l2); // Removes all nodes from l1 that are found in l2
 Event* newEmptyEvent(); // Creates an empty event
 List copyPropList(List toBeCopied); // Returns a new list with the sent list's nodes copied into it
