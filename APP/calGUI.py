@@ -19,11 +19,20 @@ class App(tk.Tk):
         self.protocol('WM_DELETE_WINDOW', self.quitHandler)  # Ask the user if they really want to quit when they hit the x button
         # self.geometry("740x1200") # Set the dimension of the window
         width, height = self.winfo_screenwidth(), self.winfo_screenheight()
-
         self.geometry('%dx%d+0+0' % (width,height))
+        canvas = tk.Canvas(self)
+        self.mainFrame = tk.Frame(canvas)
         self.initMenuBar() # Make the menubar
         self.initFileView() # Make the file view
         self.initLogPanel() # Make the console
+
+        scrollbar = tk.Scrollbar(canvas, orient="vertical", command=canvas.yview)
+        scrollbar.pack(side="right", fill="y") # Pin the scrollbar to the right side and take up all room
+        canvas.configure(yscrollcommand=scrollbar.set) # Tell the text that it loves the scrollbar even though she is married ot the padding frame
+        canvas.pack(side="left", fill="both", expand=True)
+        canvas.create_window((0,0),window=self.mainFrame,anchor='nw')
+        self.mainFrame.pack(fill="both")
+
         self.modalActive = False
         self.calPointer = None
         self.f = None
@@ -31,7 +40,7 @@ class App(tk.Tk):
         self.calDriver = driver.CalendarDriver("bin/libcparse.so") # Initialize the CalendarDriver
 
     def initFileView(self):
-        fileViewFrame = tk.Frame(self, bd=3, relief=SUNKEN)
+        fileViewFrame = tk.Frame(self.mainFrame, bd=3, relief=SUNKEN)
         paddedFrame = tk.Frame(fileViewFrame) # Set a padding frame so we can pad the scroll bar and the treeview at the same time
         self.components = ttk.Treeview(paddedFrame, columns=("event", "props", "alarms", "sum"), height=25, selectmode="none") # Create the treeview select mode is none so we ca have out own implementation
         self.components['show'] = 'headings'
@@ -56,7 +65,7 @@ class App(tk.Tk):
         self.components.bind("<ButtonPress-1>", lambda event: self.rowClickHandler(event, self.components)) # Handle clicking of a row
 
     def initLogPanel(self):
-        logFrame = tk.Frame(self) # Create a frame to house the console
+        logFrame = tk.Frame(self.mainFrame) # Create a frame to house the console
         paddedFrame = tk.Frame(logFrame, bd=3, relief=SUNKEN) # Create a frame to put both the console and scrollbar in which allows padding
         buttonFrame = tk.Frame(logFrame)
         buttonFrame.pack(fill="x", padx=10)
