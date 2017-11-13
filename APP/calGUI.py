@@ -17,7 +17,10 @@ class App(tk.Tk):
         tk.Tk.__init__(self)
         self.title(title) # Set the title of the application
         self.protocol('WM_DELETE_WINDOW', self.quitHandler)  # Ask the user if they really want to quit when they hit the x button
-        self.geometry("740x1200") # Set the dimension of the window
+        # self.geometry("740x1200") # Set the dimension of the window
+        width, height = self.winfo_screenwidth(), self.winfo_screenheight()
+
+        self.geometry('%dx%d+0+0' % (width,height))
         self.initMenuBar() # Make the menubar
         self.initFileView() # Make the file view
         self.initLogPanel() # Make the console

@@ -18,10 +18,6 @@ all:
 	make list
 	make parserso
 
-listso: $(LINKEDLISTC) $(LINKEDLISTH)
-	$(CC) $(CFLAGS) $(LINKEDLISTC) -o $(LISTO) -I $(INCLUDES)
-	$(CC) $(LISTO) -shared -o $(LISTSO)
-
 list: $(LINKEDLISTC) $(LINKEDLISTH)
 	$(CC) $(CFLAGS) -fPIC -c $(LINKEDLISTC) -o $(LISTO) -I $(INCLUDES)
 	ar cr $(LIBLIST) $(LISTO)
