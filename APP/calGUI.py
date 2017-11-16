@@ -20,18 +20,11 @@ class App(tk.Tk):
         # self.geometry("740x1200") # Set the dimension of the window
         width, height = self.winfo_screenwidth(), self.winfo_screenheight()
         self.geometry('%dx%d+0+0' % (width,height))
-        canvas = tk.Canvas(self)
-        self.mainFrame = tk.Frame(canvas)
+        self.mainFrame = tk.Frame(self)
         self.initMenuBar() # Make the menubar
         self.initFileView() # Make the file view
         self.initLogPanel() # Make the console
-
-        scrollbar = tk.Scrollbar(canvas, orient="vertical", command=canvas.yview)
-        scrollbar.pack(side="right", fill="y") # Pin the scrollbar to the right side and take up all room
-        canvas.configure(yscrollcommand=scrollbar.set) # Tell the text that it loves the scrollbar even though she is married ot the padding frame
-        canvas.pack(side="left", fill="both", expand=True)
-        canvas.create_window((0,0),window=self.mainFrame,anchor='nw')
-        self.mainFrame.pack(fill="both")
+        self.mainFrame.pack(fill="both", expand=1)
 
         self.modalActive = False
         self.calPointer = None
@@ -160,10 +153,18 @@ class App(tk.Tk):
         treeview.selection_remove(row) # Deselect all other nodes
 
     def openHandler(self):
+        if self.modalActive == True:
+            self.log("Please finish what you are doing before attempting to open a file.")
+            return
         self.f = filedialog.askopenfilename(initialdir = ".",title = "Select file",filetypes = (("all files","*.*"), ("iCalendar files","*.ics")))
         if self.f == '':
             self.f == None
             return
+
+        if self.calPointer != None:
+            answer = messagebox.askquestion("Warning", "You potentially have unsaved work, opening this calendar will overwrite any unsaved changes you currently have open.\nDo you wish to continue?", icon='warning')
+            if answer == "no":
+                return
         self.fPretty = self.f[self.f.rfind("/") + 1:]
         self.log("Opening : " + self.fPretty) # Tell the user we are trying to open the file
         calPointer = self.calDriver.openCalendar(self.f) # Try to open the file
@@ -171,18 +172,20 @@ class App(tk.Tk):
             error = self.calDriver.validateCalendar(self.f)
             self.log("Error opening calendar file " + self.fPretty + " : " + error) # Output the error
             return
+        if self.calPointer != None:
+            self.calDriver.deleteCalendar(self.calPointer)
 
         self.log("Successfully opened the file " + self.fPretty) # Tell the user everything went OK
         self.title(self.f)
-
-        if self.calPointer != None:
-            self.calDriver.deleteCalendar(self.calPointer) # Free the old pointer
 
         self.calPointer = calPointer
         self.createMenu.entryconfig("Create event", state="normal")
         self.updateComponentView()
 
     def saveHandler(self):
+        if self.modalActive == True:
+            self.log("Please finish what you are doing before attempting to save a file.")
+            return
         if len(self.components.get_children()) == 0:
             messagebox.showerror("Error", "You must add some events before saving. (ctrl+e)")
             self.log("You must add some events before saving. (ctrl+e)")
@@ -201,6 +204,9 @@ class App(tk.Tk):
         self.saveAsHandler()
 
     def saveAsHandler(self):
+        if self.modalActive == True:
+            self.log("Please finish what you are doing before attempting to save a file.")
+            return
         if len(self.components.get_children()) == 0:
             messagebox.showerror("Error", "You must add some events before saving. (ctrl+e)")
             self.log("You must add some events before saving. (ctrl+e)")
@@ -233,6 +239,7 @@ class App(tk.Tk):
         self.calModal.grab_set()
         self.calModal.title("Create Calendar")
         paddedFrame = tk.Frame(self.calModal) # Create a padding frame frame
+        self.calModal.protocol('WM_DELETE_WINDOW', lambda: self.cancelHandler(self.calModal, self))
 
         prodFrame = tk.Frame(paddedFrame)
         prodLabel = tk.Label(prodFrame, text="Prod ID:")
@@ -305,9 +312,14 @@ class App(tk.Tk):
         self.modalActive = False
 
     def newCalendar(self, version, prodId, eventsTreeview):
-        if self.calPointer == None:
-            self.calPointer = self.calDriver.createBasicCalendar(float(version), prodId)
-            self.createMenu.entryconfig("Create event", state="normal")
+        if self.calPointer != None:
+            answer = messagebox.askquestion("Warning", "You potentially have unsaved work, submitting this calendar will overwrite any unsaved changes you currently have open.\nDo you wish to continue?", icon='warning')
+            if answer == "no":
+                return
+            self.calDriver.deleteCalendar(self.calPointer)
+
+        self.calPointer = self.calDriver.createBasicCalendar(float(version), prodId)
+        self.createMenu.entryconfig("Create event", state="normal")
 
         for event in eventsTreeview.get_children():
             uid = eventsTreeview.item(event)['values'][0]
@@ -330,6 +342,7 @@ class App(tk.Tk):
         self.eventModal.grab_set()
         self.eventModal.title("Create Event")
         paddedFrame = tk.Frame(self.eventModal) # Create a padding frame frame
+        self.eventModal.protocol('WM_DELETE_WINDOW', lambda: self.cancelHandler(self.eventModal, parent))
 
         uidFrame = tk.Frame(paddedFrame)
         uidLabel = tk.Label(uidFrame, text="UID: ")
