@@ -25,9 +25,9 @@ list: $(LINKEDLISTC) $(LINKEDLISTH)
 parserso: $(LINKEDLISTC) $(LINKEDLISTH) $(CALENDARPARSERC) $(CALENDARPARSERH)
 	$(CC) $(CFLAGS) -fPIC -c $(CALENDARPARSERC) -o  $(CALENDARO) -I $(INCLUDES)
 	$(CC) $(CFLAGS) $(CALENDARO) -Lbin/ -lllist -shared -o $(CALENDARSO)
-	cp $(CALENDARSO) $(APPBIN)
 
 run:
-	python3 APP/Main.py
+	python3 bin/Main.py
+	
 clean:
-	rm -f $(CALENDARSO) $(CALENDARO) $(LISTO) $(LIBLIST) $(APPBIN)/libcparse.so
+	rm -f $(CALENDARSO) $(CALENDARO) $(LISTO) $(LIBLIST)

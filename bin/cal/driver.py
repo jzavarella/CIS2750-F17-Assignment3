@@ -1,4 +1,11 @@
-#!/usr/bin/python3
+# /*
+#  * CIS2750 F2017
+#  * Assignment 3
+#  * Jackson Zavarella 0929350
+#  * This file is a python wrapper for the c functions in CalendarParser.h
+#  * No code was used from previous classes/ sources
+#  */
+
 from ctypes import *
 
 class CalendarDriver(object):

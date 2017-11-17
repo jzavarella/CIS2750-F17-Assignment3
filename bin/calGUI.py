@@ -1,6 +1,11 @@
-# !/usr/bin/python3
+# /*
+#  * CIS2750 F2017
+#  * Assignment 3
+#  * Jackson Zavarella 0929350
+#  * This file creates the GUI and handles most of the business logic
+#  * No code was used from previous classes/ sources
+#  */
 
-# TODO: Clean this up
 import tkinter as tk
 from tkinter import ttk
 from tkinter import *
@@ -130,7 +135,8 @@ class App(tk.Tk):
 
     def insertComponent(self, component):
         n = len(self.components.get_children("")) + 1 # Get number of elements in list and add 1
-        self.components.insert("" , "end", values=(n, component[0], component[1], component[2])) # Put the component in the list
+        summary = component[2]
+        self.components.insert("" , "end", values=(n, component[0], component[1], summary)) # Put the component in the list
 
     def log(self, log):
         self.console.config(state=NORMAL) # Allow editting
@@ -299,7 +305,8 @@ class App(tk.Tk):
         if self.calDriver.validateVersion(version) == False:
             messagebox.showerror("Error", "You must enter a valid version.")
             return
-        if self.calDriver.matchTEXTField(prodId) == False:
+        # if self.calDriver.matchTEXTField(prodId) == False:
+        if prodId == "":
             messagebox.showerror("Error", "You must enter a valid product id.")
             return
         event = eventsTreeview.get_children()

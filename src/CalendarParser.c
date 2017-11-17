@@ -240,7 +240,6 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     return lineCheckError; // Return the error that was produced
   }
 
-
   // Get the properties between event tags
   ICalErrorCode betweenVCalendarTagsError = extractBetweenTags(iCalPropertyList, &betweenVCalendarTags, INV_CAL, "VCALENDAR");
   if (betweenVCalendarTagsError != OK) { // If there was a problem parsing
@@ -248,6 +247,17 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     clearList(&betweenVCalendarTags);
     return betweenVCalendarTagsError; // Return the error that was produced
   }
+
+
+  // // We should only have VERSION and PRODID now
+  ICalErrorCode iCalIdErrors = parseRequirediCalTags(&betweenVCalendarTags, *obj); // Place UID and version in the obj
+  if (iCalIdErrors != OK) { // If there was a problem
+    clearList(&iCalPropertyList); // Clear lists before returning
+    clearList(&betweenVCalendarTags);
+    clearList(&events);
+    return iCalIdErrors; // Return the error that was produced
+  }
+
 
   // List to store event properties
   List betweenVEventTags = initializeList(&printPropertyListFunction, &deletePropertyListFunction, &comparePropertyListFunction);
@@ -291,16 +301,6 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
     clearList(&betweenVEventTags);
     clearList(&events);
     return INV_CAL; // If there is no event, then the calendar is invalid
-  }
-
-  // // We should only have VERSION and PRODID now
-  ICalErrorCode iCalIdErrors = parseRequirediCalTags(&betweenVCalendarTags, *obj); // Place UID and version in the obj
-  if (iCalIdErrors != OK) { // If there was a problem
-    clearList(&iCalPropertyList); // Clear lists before returning
-    clearList(&betweenVCalendarTags);
-    clearList(&betweenVEventTags);
-    clearList(&events);
-    return iCalIdErrors; // Return the error that was produced
   }
 
   clearList(&iCalPropertyList); // Clear lists before returning
@@ -764,61 +764,61 @@ ICalErrorCode validateEventProps(const Calendar* obj, Event* event) {
 
   while ((prop = nextElement(&eventPropIter))) {
     char* propName = prop->propName;
-    char* propDescr = prop->propDescr;
-    if (match(propName, "^ATTACH$") && matchURIField(propDescr)) {
+    // char* propDescr = prop->propDescr;
+    if (match(propName, "^ATTACH$")) { // && matchURIField(propDescr)
       continue;
-    } else if (match(propName, "^CATEGORIES$") && matchTEXTListField(propDescr)) {
+    } else if (match(propName, "^CATEGORIES$")) { // && matchTEXTListField(propDescr)
       continue;
-    } else if (match(propName, "^CLASS$") && match(propDescr, "^(PUBLIC|PRIVATE|CONFIDENTIAL)$")) {
+    } else if (match(propName, "^CLASS$")) { // && match(propDescr, "^(PUBLIC|PRIVATE|CONFIDENTIAL)$")
       continue;
-    } else if (match(propName, "^COMMENT$") && matchTEXTField(propDescr)) {
+    } else if (match(propName, "^COMMENT$")) { // && matchTEXTField(propDescr)
       continue;
-    } else if (match(propName, "^DESCRIPTION$") && matchSUMMARYField(propDescr) && getPropCount("DESCRIPTION", event->properties) <= 1) {
+    } else if (match(propName, "^DESCRIPTION$")&& getPropCount("DESCRIPTION", event->properties) <= 1) { //  && matchSUMMARYField(propDescr)
       continue;
-    } else if (match(propName, "^GEO$") && matchLONGLATField(propDescr)) {
+    } else if (match(propName, "^GEO$")) { //  && matchLONGLATField(propDescr)
       continue;
-    } else if (match(propName, "^LOCATION$") && matchTEXTField(propDescr)) {
+    } else if (match(propName, "^LOCATION$")) { // && matchTEXTField(propDescr)
       continue;
-    } else if (match(propName, "^PRIORITY$") && match(propDescr, "^[[:digit:]]$")) {
+    } else if (match(propName, "^PRIORITY$")) { // && match(propDescr, "^[[:digit:]]$")
       continue;
-    } else if (match(propName, "^RESOURCES$") && matchTEXTListField(propDescr) && getPropCount("RESOURCES", event->properties) <= 1) {
+    } else if (match(propName, "^RESOURCES$") && getPropCount("RESOURCES", event->properties) <= 1) { //  && matchTEXTListField(propDescr)
       continue;
-    } else if (match(propName, "^STATUS$") && match(propDescr, "^(TENTATIVE|CONFIRMED|CANCELLED)$") && getPropCount("STATUS", event->properties) <= 1) {
+    } else if (match(propName, "^STATUS$") && getPropCount("STATUS", event->properties) <= 1) { //  && match(propDescr, "^(TENTATIVE|CONFIRMED|CANCELLED)$")
       continue;
-    } else if (match(propName, "^SUMMARY$") && matchSUMMARYField(propDescr)) {
+    } else if (match(propName, "^SUMMARY$")) { //  && matchSUMMARYField(propDescr)
       continue;
-    } else if (match(propName, "^DTSTART$") && matchDATEField(propDescr) && getPropCount("DTSTART", event->properties) <= 1) { // DTEND requires that we have a start
+    } else if (match(propName, "^DTSTART$") && getPropCount("DTSTART", event->properties) <= 1) { // DTEND requires that we have a start  && matchDATEField(propDescr)
       continue;
-    } else if (match(propName, "^DTEND$") && matchDATEField(propDescr) && getPropCount("DTEND", event->properties) <= 1) { // DTEND requires that we have a start
+    } else if (match(propName, "^DTEND$") && getPropCount("DTEND", event->properties) <= 1 && getPropCount("DURATION", event->properties) < 1) { // DTEND requires that we have a start  && matchDATEField(propDescr)
       continue;
-    } else if (match(propName, "^DURATION$") && matchDURATIONField(propDescr)) {
+    } else if (match(propName, "^DURATION$") && getPropCount("DTEND", event->properties) < 1) { //  && matchDURATIONField(propDescr)
       continue;
-    } else if (match(propName, "^TRANSP$") && match(propDescr, "^(OPAQUE|TRANSPARENT)$") && getPropCount("TRANSP", event->properties) <= 1) {
+    } else if (match(propName, "^TRANSP$") && getPropCount("TRANSP", event->properties) <= 1) { //  && match(propDescr, "^(OPAQUE|TRANSPARENT)$")
       continue;
-    } else if (match(propName, "^ATENDEE$") && matchTEXTField(propDescr)) {
+    } else if (match(propName, "^ATENDEE$")) { //  && matchTEXTField(propDescr)
       continue;
-    } else if (match(propName, "^CONTACT$") && matchTEXTField(propDescr)) {
+    } else if (match(propName, "^CONTACT$")) { //  && matchTEXTField(propDescr)
       continue;
-    } else if (match(propName, "^ORGANIZER$") && matchEMAILField(propDescr)) {
+    } else if (match(propName, "^ORGANIZER$")) { //  && matchEMAILField(propDescr)
       continue;
-    } else if (match(propName, "^RELATED-TO$") && matchTEXTField(propDescr)) {
+    } else if (match(propName, "^RELATED-TO$")) { // && matchTEXTField(propDescr)
       continue;
-    } else if (match(propName, "^URL$") && matchURIField(propDescr) && getPropCount("URL", event->properties) <= 1) {
+    } else if (match(propName, "^URL$") && getPropCount("URL", event->properties) <= 1) { //  && matchURIField(propDescr)
       continue;
-    } else if (match(propName, "^EXDATE$") && matchTEXTField(propDescr)) {
+    } else if (match(propName, "^EXDATE$")) { //  && matchTEXTField(propDescr)
       continue;
-    } else if (match(propName, "^RDATE$") && matchTEXTField(propDescr)) {
+    } else if (match(propName, "^RDATE$")) { //  && matchTEXTField(propDescr)
       continue;
-    } else if (match(propName, "^RRULE") && matchTEXTField(propDescr) && getPropCount("RRULE", event->properties) <= 1) {
+    } else if (match(propName, "^RRULE") && getPropCount("RRULE", event->properties) <= 1) { //  && matchTEXTField(propDescr)
       continue;
-    } else if (match(propName, "CREATED") && matchDATEField(propDescr) && getPropCount("CREATED", event->properties) <= 1) {
+    } else if (match(propName, "CREATED") && getPropCount("CREATED", event->properties) <= 1) { //  && matchDATEField(propDescr)
      continue;
-    } else if (match(propName, "LAST-MODIFIED") && matchDATEField(propDescr)) {
+   } else if (match(propName, "LAST-MODIFIED")) { // && matchDATEField(propDescr)
      continue;
-   } else if (match(propName, "SEQUENCE") && match(propDescr, "^[[:digit:]]$")) {
+   } else if (match(propName, "SEQUENCE")) { //  && match(propDescr, "^[[:digit:]]$")
      continue;
     } else {
-      printf("INV EVENT: %s %s\n", propName, propDescr);
+      // printf("INV EVENT: %s %s\n", propName, propDescr);
       return INV_EVENT;
     }
   }
@@ -828,20 +828,21 @@ ICalErrorCode validateEventProps(const Calendar* obj, Event* event) {
 
 ICalErrorCode validateAlarmProps(const Calendar* obj, Event* event, Alarm* alarm) {
   ListIterator alarmPropIter = createIterator(alarm->properties);
+
   Property* prop;
 
   while ((prop = nextElement(&alarmPropIter))) {
     char* propName = prop->propName;
-    char* propDescr = prop->propDescr;
-    if (match(propName, "^ATTACH$") && matchURIField(propDescr)) {
+    // char* propDescr = prop->propDescr;
+    if (match(propName, "^ATTACH$")) { // && matchURIField(propDescr)
       continue;
-    } else if (match(propName, "^REPEAT$") && match(propDescr, "^[[:digit:]]+$")) {
+    } else if (match(propName, "^REPEAT$")) { //  && match(propDescr, "^[[:digit:]]+$")
       continue;
-    } else if (match(propName, "^DURATION$") && matchDURATIONField(propDescr)) {
+    } else if (match(propName, "^DURATION$")) { //  && matchDURATIONField(propDescr)
       continue;
-    } else if (match(propName, "^DESCRIPTION$") && matchSUMMARYField(propDescr) && getPropCount("DESCRIPTION", alarm->properties) <= 1) {
+    } else if (match(propName, "^DESCRIPTION$") && getPropCount("DESCRIPTION", alarm->properties) <= 1) { //  && matchSUMMARYField(propDescr)
       continue;
-    } else if (match(propName, "^SUMMARY$") && matchTEXTField(propDescr)) {
+    } else if (match(propName, "^SUMMARY$")) { //  && matchTEXTField(propDescr)
       continue;
     } else {
       // printf("INV ALARM: %s %s\n", propName, propDescr);
@@ -858,10 +859,10 @@ ICalErrorCode validateCalProps(const Calendar* obj) {
 
   while ((prop = nextElement(&calPropIter))) {
     char* propName = prop->propName;
-    char* propDescr = prop->propDescr;
-    if (match(propName, "^CALSCALE$") && matchTEXTField(propDescr) && getPropCount("CALSCALE", obj->properties) <= 1) {
+    // char* propDescr = prop->propDescr;
+    if (match(propName, "^CALSCALE$") && getPropCount("CALSCALE", obj->properties) <= 1) { //  && matchTEXTField(propDescr)
       continue;
-    } else if (match(propName, "^METHOD$") && matchTEXTField(propDescr) && getPropCount("METHOD", obj->properties) <= 1) {
+    } else if (match(propName, "^METHOD$") && getPropCount("METHOD", obj->properties) <= 1) { //  && matchTEXTField(propDescr)
       continue;
     } else {
       // printf("INV CAL: %s %s\n", propName, propDescr);
@@ -898,6 +899,19 @@ ICalErrorCode validateCalendar(const Calendar* obj) {
     return INV_CAL; // Must have at least one event
   }
 
+  if (findElement(obj->properties, &compareTags, "PRODID")) { // If there is a prodid in the props
+    return DUP_PRODID;
+  }
+
+  if (findElement(obj->properties, &compareTags, "VERSION")) { // If there is a prodid in the props
+    return DUP_VER;
+  }
+
+  ICalErrorCode calPropsError = validateCalProps(obj);
+  if (calPropsError != OK) {
+    return calPropsError;
+  }
+
   ListIterator eventIter = createIterator(obj->events);
   Event* ev;
 
@@ -918,28 +932,12 @@ ICalErrorCode validateCalendar(const Calendar* obj) {
     ListIterator alarmIter = createIterator(ev->alarms);
     Alarm* a;
     while ((a = nextElement(&alarmIter))) {
-      // if (!match(a->action, "^(AUDIO|DISPLAY|EMAIL)$") || (strcmp(a->trigger, "") == 0)) {
-      //   return INV_ALARM;
-      // }
-      //
-      // ListIterator aPropIter = createIterator(a->properties);
-      // Property* ap;
-      //
-      // while ((ap = nextElement(&aPropIter))) {
-      //   if (strlen(ap->propName) == 0) {
-      //     return INV_ALARM;
-      //   }
-      // }
       ICalErrorCode alarmErrorCode = validateAlarmProps(obj, ev, a);
+
       if (alarmErrorCode != OK) {
         return alarmErrorCode;
       }
     }
-  }
-
-  ICalErrorCode calPropsError = validateCalProps(obj);
-  if (calPropsError != OK) {
-    return calPropsError;
   }
 
   return OK;
@@ -1372,7 +1370,7 @@ Alarm* createAlarmFromPropList(List props) {
       strcpy(ACTION, tempDescription);
 
     } else if (match(propName, "^TRIGGER$")) {
-      if (TRIGGER || !matchDURATIONField(propDescr)) {
+      if (TRIGGER) { // || !matchDURATIONField(propDescr)
         clearList(&alarmProps);
         // printf("%s\n", propDescr);
         return NULL; // Already have trigger
