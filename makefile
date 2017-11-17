@@ -27,7 +27,7 @@ parserso: $(LINKEDLISTC) $(LINKEDLISTH) $(CALENDARPARSERC) $(CALENDARPARSERH)
 	$(CC) $(CFLAGS) $(CALENDARO) -Lbin/ -lllist -shared -o $(CALENDARSO)
 
 run:
-	python3 bin/Main.py
-	
+	python3 bin/A3main.py
+
 clean:
 	rm -f $(CALENDARSO) $(CALENDARO) $(LISTO) $(LIBLIST)
